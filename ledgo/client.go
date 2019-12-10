@@ -99,19 +99,28 @@ func NewClient() {
 	}
 	defer device.Close()
 
+	device.SetAutoDetach(true)
+
+	// Claim the default interface using a convenience function.
+	// The default interface is always #0 alt #0 in the currently active
+	// config.
+	_, done, err := device.DefaultInterface()
+	if err != nil {
+		log.Fatalf("%s.DefaultInterface(): %v", device, err)
+	}
+
 	//type + mode + color + misc + suffix
-	data, err := hex.DecodeString("11ff0e3b00" + "01" + "000000" + "0000000000" + "000000000000")
+	data, err := hex.DecodeString("11ff0e3b00" + "01" + "FF0000" + "0000000000" + "000000000000")
 	if err != nil {
 		log.Fatalf("FATAL: %v", err)
 	}
-	res, err := device.Control(0x21, 0x09, 0x0211, 0x01, data)
+
+	_, err = device.Control(0x21, 0x09, 0x0211, 0x01, data)
 	if err != nil {
+		done()
 		log.Fatalf("Could not control a device: %v", err)
 	}
-	if res != 0 {
-		log.Fatalf("Could not control a device(2): %v", err)
-	}
-
+	done()
 	err = device.Close()
 	if err != nil {
 		log.Fatalf("Could not close a device: %v", err)
